@@ -2,6 +2,7 @@ import os
 import psycopg2
 import subprocess
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
+from psycopg2.extensions import parse_dsn
 
 # Set environment variables
 prefix_database_url = os.environ["PG_DATABASE_URL"]
@@ -36,7 +37,24 @@ def invoke_scraper():
 def apply_extra_script():
     """Apply the extra script to the database."""
     print("Applying extra script...", flush=True)
-    command = f'psql {pg_db_url} -d {scrape_db} -f {extra_sql_file}'
+
+    dsn_parameters = parse_dsn(pg_db_url)
+
+    # Extract individual components
+    host = dsn_parameters.get('host')
+    port = dsn_parameters.get('port')
+    password = dsn_parameters.get('password')
+    user = dsn_parameters.get('user')
+
+    os.environ["PGPASSWORD"] = password
+    command = [
+    'psql',
+    '-h', host,
+    '-p', port,
+    '-U', user,
+    '-d', scrape_db,
+    '-f', extra_sql_file]
+    
     process = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     print(process.stdout, flush=True)
     print(process.stderr, flush=True)
@@ -71,16 +89,16 @@ def cli():
         print("Wait failed.", flush=True)
         return return_code
     
-    drop_database(scrape_db)
+    #drop_database(scrape_db)
     
-    create_database(scrape_db)
+    #create_database(scrape_db)
    
     # Invoke the scraper
-    return_code = invoke_scraper()
-    if return_code != 0:
-        print("Scraper failed to import data.", flush=True)
-        return return_code
-    print("Scraper finished successfully.", flush=True)
+    # return_code = invoke_scraper()
+    # if return_code != 0:
+    #     print("Scraper failed to import data.", flush=True)
+    #     return return_code
+    # print("Scraper finished successfully.", flush=True)
 
     if(test_scraped_data()):
         print("New data has been fetched", flush=True)
@@ -120,6 +138,9 @@ def drop_database(db_name):
     conn = psycopg2.connect(pg_db_url)
     conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
     cursor = conn.cursor()
+    # Terminate all connections to the old database
+    cursor.execute(f"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '{db_name}';")
+    # Drop the database
     cursor.execute(f"DROP DATABASE IF EXISTS {db_name};")
     cursor.close()
     conn.close()
