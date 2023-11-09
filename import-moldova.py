@@ -89,16 +89,16 @@ def cli():
         print("Wait failed.", flush=True)
         return return_code
     
-    #drop_database(scrape_db)
+    drop_database(scrape_db)
     
-    #create_database(scrape_db)
+    create_database(scrape_db)
    
     # Invoke the scraper
-    # return_code = invoke_scraper()
-    # if return_code != 0:
-    #     print("Scraper failed to import data.", flush=True)
-    #     return return_code
-    # print("Scraper finished successfully.", flush=True)
+    return_code = invoke_scraper()
+    if return_code != 0:
+        print("Scraper failed to import data.", flush=True)
+        return return_code
+    print("Scraper finished successfully.", flush=True)
 
     if(test_scraped_data()):
         print("New data has been fetched", flush=True)
