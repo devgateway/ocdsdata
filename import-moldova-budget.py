@@ -5,12 +5,12 @@ import psycopg2
 #budget_db = os.environ["BUDGET_DB"]
 #prefix_database_url = os.environ["PG_DATABASE_URL"]
 #budget_db_url = prefix_database_url + budget_db
-#budget_db_url = "postgresql://superset:superset@localhost:5433/budget_moldova"
+budget_db_url = "postgresql://superset:superset@localhost:5433/budget_moldova"
 
-def check_file_exists(id, revision_id):
+def check_file_exists(resource_id, revision_id):
      with psycopg2.connect(budget_db_url) as conn:
         cursor = conn.cursor()
-        cursor.execute(f"SELECT count(*) from files where id = '{id}' and revision_id = '{revision_id}';")
+        cursor.execute(f"SELECT count(*) from files where resource_id = '{resource_id}' and revision_id = '{revision_id}';")
         existing_count = cursor.fetchone()[0]
         cursor.close()
         return existing_count > 0
@@ -18,7 +18,7 @@ def check_file_exists(id, revision_id):
 def save_file(resource, content):
     with psycopg2.connect(budget_db_url) as conn:
         cursor = conn.cursor()
-        query = ("INSERT INTO files (id, resource_group_id, cache_last_updated, revision_timestamp, size, state, hash, description, format, last_modified, url_type," 
+        query = ("INSERT INTO files (resource_id, resource_group_id, cache_last_updated, revision_timestamp, size, state, hash, description, format, last_modified, url_type," 
                        " mimetype, cache_url, name, created, url, webstore_url, mimetype_inner, \"position\", revision_id, resource_type, content) " 
                        " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);")
         data_tuple = (
@@ -88,7 +88,7 @@ def download_ckan_package(base_url, package_id):
                     print(f"Downloaded {name}")
                     save_file(resource, resource_response.content)
                 else:
-                    print(f"Failed to download {resource_name}")
+                    print(f"Failed to download {name}")
 
         else:
             print("Failed to retrieve package details.")
